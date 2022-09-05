@@ -1,10 +1,12 @@
 from sqlite3 import IntegrityError
 from this import d
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.contrib.auth import login, logout, authenticate
+from .forms import TodoForm
+from .models import Todo
 # Create your views here.
 
 
@@ -31,7 +33,8 @@ def home(req):
 
 
 def currenttodos(req):
-    return render(req, 'todo/currenttodos.html')
+    todos = Todo.objects.filter(user=req.user, datecompleted__isnull=True)
+    return render(req, 'todo/currenttodos.html', {'todos': todos})
 
 
 def logoutuser(req):
@@ -51,3 +54,31 @@ def loginuser(req):
         else:
             login(req, user)
             return redirect('currenttodos')
+
+
+def createtodo(req):
+    if req.method == 'GET':
+        return render(req, 'todo/createtodo.html', {'form': TodoForm()})
+    else:
+        try:
+            form = TodoForm(req.POST)
+            newtodo = form.save(commit=False)
+            newtodo.user = req.user
+            newtodo.save()
+            return redirect('currenttodos')
+        except ValueError:
+            return render(req, 'todo/createtodo.html', {'form': TodoForm(), 'error': 'Bad data enetered'})
+
+
+def viewtodo(req, todo_pk):
+    todo = get_object_or_404(Todo, pk=todo_pk, user=req.user)
+    if req.method == 'GET':
+        form = TodoForm(instance=todo)
+        return render(req, 'todo/viewtodo.html', {'todo': todo, 'form': form})
+    else:
+        try:
+            form = TodoForm(req.POST, instance=todo)
+            form.save()
+            return redirect('currenttodos')
+        except ValueError:
+            return render(req, 'todo/viewtodo.html', {'todo': todo, 'form': form, 'error': 'Bad data entered'})
