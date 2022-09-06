@@ -1,5 +1,5 @@
 
-#Task To Do
+# Task To Do
 
 A straightforward Django-based application called The Task To Do. The user has the ability to add tasks, remove tasks, and even mark tasks as finished.
 
